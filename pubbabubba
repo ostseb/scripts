@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# CONFIG
+TOKEN=""
+ZIP_URL="https://api.github.com/repos/Webprefer/sverigecasino/zipball/master"
+COPY_TARGET="website/"
+COPY_DESTINATION="./"
+SYNC_EXCLUDE_CSV="config/,logs/"
+
+echo " ____        _     _           ____        _     _
+|  _ \ _   _| |__ | |__   __ _| __ ) _   _| |__ | |__   __ _
+| |_) | | | | '_ \| '_ \ / _\` |  _ \| | | | '_ \| '_ \ / _\` |
+|  __/| |_| | |_) | |_) | (_| | |_) | |_| | |_) | |_) | (_| |
+|_|    \__,_|_.__/|_.__/ \__,_|____/ \__,_|_.__/|_.__/ \__,_|
+                        www.sebost.se                        "
+
+FORCE=false
+TIME=$(date +"%s")
+SYNC_EXCLUDE=()
+IFS=","
+read -a SYNC_EXCLUDE_ARRAY <<< "$SYNC_EXCLUDE_CSV"
+
+for i in ${SYNC_EXCLUDE_ARRAY[@]}; do
+	SYNC_EXCLUDE+=(--exclude="$i")
+done
+
+while getopts ":f" opt; do
+	case $opt in
+		f)
+			FORCE=true;
+			;;
+		\?)
+			echo "Huh?";
+			;;
+	esac
+done
+
+if [ "$(id -u)" == "0" ] && [ "$FORCE" != "true" ] ; then
+	echo "Its not recommended to run this script as root. Use -f to force it."
+	exit 1
+fi
+
+echo "Create folder to work in..."
+mkdir "pubbabubba-tmp-"$TIME
+mkdir "pubbabubba-tmp-$TIME/zip"
+cd "pubbabubba-tmp-"$TIME
+
+if [ "$TOKEN" == "" ]; then
+	echo -en "\nEnter your access token: "
+	read -s TOKEN
+fi
+
+if [ "$TOKEN" == "" ]; then
+	echo -e "\n\nStopped. No token provided.\n"
+else
+	echo -e "\nFetching latest zip..."
+	#curl -Lu "$TOKEN:x-oauth-basic" $ZIP_URL > "pubbabubba-"$TIME".zip"
+	wget --header "Authorization: token $TOKEN" -O"pubbabubba-"$TIME".zip" $ZIP_URL
+
+	echo "Unziping file..."
+	unzip -oq "pubbabubba-"$TIME".zip" -d zip/
+
+	# We dont know the foldername in zipfile
+	mv zip/* zip/repo
+
+	echo "Looking for changes..."
+	rsync -ican ${SYNC_EXCLUDE[@]} "zip/repo/"$COPY_TARGET "../"$COPY_DESTINATION | egrep "^>" > ./updated_files
+
+	LINES=$(cat ./updated_files | wc -l | xargs)
+
+	echo -e "\nFiles changed: $LINES"
+	cat ./updated_files
+
+	if [ "$LINES" != "0" ]; then
+		echo -en "\nDo you wish to continue? [no] "
+		read CONTINUE
+	else
+		echo -e "\nNo changes found.\n"
+	fi
+
+	if [ "$CONTINUE" == "yes" ]; then
+		echo "Copying files..."
+		rsync -ca ${SYNC_EXCLUDE[@]} "zip/repo/"$COPY_TARGET "../"$COPY_DESTINATION
+	else
+		echo "Stopped..."
+	fi
+fi
+
+echo "Cleaning up..."
+cd ..
+rm -rf "pubbabubba-tmp-"$TIME
+
+TIMEDIFF=`expr $(date +"%s") - $TIME`
+echo "Done after "$TIMEDIFF"s!"
+exit 0
