@@ -2,10 +2,11 @@
 
 # CONFIG
 TOKEN=""
-ZIP_URL="https://api.github.com/repos/Webprefer/sverigecasino/zipball/master"
+ZIP_URL="https://api.github.com/repos/Webprefer/livelounge/zipball/"
+BRANCH="master"
 COPY_TARGET="website/"
 COPY_DESTINATION="./"
-SYNC_EXCLUDE_CSV="config/,logs/"
+SYNC_EXCLUDE_CSV="config/,logs/,.htaccess,sbtech.js"
 
 echo " ____        _     _           ____        _     _
 |  _ \ _   _| |__ | |__   __ _| __ ) _   _| |__ | |__   __ _
@@ -13,8 +14,9 @@ echo " ____        _     _           ____        _     _
 |  __/| |_| | |_) | |_) | (_| | |_) | |_| | |_) | |_) | (_| |
 |_|    \__,_|_.__/|_.__/ \__,_|____/ \__,_|_.__/|_.__/ \__,_|
                         www.sebost.se                        "
-
+VERSION="1.1.2"
 FORCE=false
+YES=false
 TIME=$(date +"%s")
 SYNC_EXCLUDE=()
 IFS=","
@@ -24,13 +26,33 @@ for i in ${SYNC_EXCLUDE_ARRAY[@]}; do
 	SYNC_EXCLUDE+=(--exclude="$i")
 done
 
-while getopts ":f" opt; do
+while getopts ":yvfb:t:" opt; do
 	case $opt in
 		f)
 			FORCE=true;
 			;;
+		y)
+			YES=true;
+			;;
+		b)
+			BRANCH=$OPTARG;
+			;;
+		t)
+			TOKEN=$OPTARG;
+			;;
+		v)
+			echo "Version: $VERSION";
+			;;
 		\?)
 			echo "Huh?";
+			echo "-f to force";
+			echo "-y to accept changes";
+			echo "-b<branch> to override default branch";
+			exit 0
+			;;
+		:)
+			echo "Option -$OPTARG requires an argument.";
+			exit 1
 			;;
 	esac
 done
@@ -55,7 +77,7 @@ if [ "$TOKEN" == "" ]; then
 else
 	echo -e "\nFetching latest zip..."
 	#curl -Lu "$TOKEN:x-oauth-basic" $ZIP_URL > "pubbabubba-"$TIME".zip"
-	wget --header "Authorization: token $TOKEN" -O"pubbabubba-"$TIME".zip" $ZIP_URL
+	wget --header "Authorization: token $TOKEN" -O"pubbabubba-"$TIME".zip" $ZIP_URL$BRANCH
 
 	echo "Unziping file..."
 	unzip -oq "pubbabubba-"$TIME".zip" -d zip/
@@ -71,14 +93,14 @@ else
 	echo -e "\nFiles changed: $LINES"
 	cat ./updated_files
 
-	if [ "$LINES" != "0" ]; then
+	if [ "$LINES" != "0" ] && [ "$YES" == "false" ]; then
 		echo -en "\nDo you wish to continue? [no] "
 		read CONTINUE
 	else
 		echo -e "\nNo changes found.\n"
 	fi
 
-	if [ "$CONTINUE" == "yes" ]; then
+	if [ "$CONTINUE" == "yes" ] || [ "$YES" == "true" ]; then
 		echo "Copying files..."
 		rsync -ca ${SYNC_EXCLUDE[@]} "zip/repo/"$COPY_TARGET "../"$COPY_DESTINATION
 	else
