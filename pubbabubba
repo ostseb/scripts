@@ -4,6 +4,7 @@
 TOKEN=""
 ZIP_URL="https://api.github.com/repos/Webprefer/livelounge/zipball/"
 BRANCH="master"
+WORKING_DIR="/var/www/lle.webprefer.com/"
 COPY_TARGET="website/"
 COPY_DESTINATION="./"
 SYNC_EXCLUDE_CSV="config/,logs/,.htaccess,sbtech.js"
@@ -43,6 +44,9 @@ while getopts ":yvfb:t:" opt; do
 		v)
 			echo "Version: $VERSION";
 			;;
+		w)
+			WORKING_DIR=$OPTARG;
+			;;
 		\?)
 			echo "Huh?";
 			echo "-f to force";
@@ -56,6 +60,9 @@ while getopts ":yvfb:t:" opt; do
 			;;
 	esac
 done
+
+echo "Go to working dir ($WORKING_DIR)"
+cd $WORKING_DIR
 
 if [ "$(id -u)" == "0" ] && [ "$FORCE" != "true" ] ; then
 	echo "Its not recommended to run this script as root. Use -f to force it."
