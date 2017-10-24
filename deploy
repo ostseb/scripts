@@ -1,0 +1,33 @@
+#!/bin/bash
+STATUS_API="http://api.webprefer.com/git/nightrush-$1"
+LOCK_FILE="/tmp/nrh-deploy-$1.lock"
+SHA_FILE="/tmp/nrh-deploy-$1.sha"
+
+echo "------------------"
+echo "---Start deploy---"
+echo "------------------"
+echo "Branch: $1"
+
+if [ -f $LOCK_FILE ]
+then
+  echo "Lock file found, script is running..."
+  exit 0
+fi
+
+touch $LOCK_FILE
+
+REMOTE_SHA=$(curl -s $STATUS_API)
+LOCAL_SHA=$(cat $SHA_FILE)
+
+if [ "$REMOTE_SHA" = "$LOCAL_SHA" ]
+then
+  echo "No changes found, aborting..."
+  rm $LOCK_FILE
+  exit 0
+fi
+
+echo "Update to $REMOTE_SHA from $LOCAL_SHA";
+/var/www/nrh.webprefer.com/pubbabubba -y -t<token> -b$1
+echo "$REMOTE_SHA" > $SHA_FILE
+
+rm $LOCK_FILE
