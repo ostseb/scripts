@@ -1,4 +1,9 @@
-# pubbabubba
+# My scripts
 
-# Todo
+## Deploy
+-
+
+## Pubbabubba
+
+### Todo
 * use tar instead of zip
