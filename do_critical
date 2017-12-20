@@ -1,17 +1,20 @@
 #!/bin/bash
-  
+
 URL=$1
 NAME=$2
 FOLDER="critical/"
 
-echo "wget -O${FOLDER}${NAME}.htm -q --header \"Cookie: PHPSESSID=$3\" $URL"
-wget -O${FOLDER}${NAME}.htm -q --header "Cookie: PHPSESSID=$3" $URL
+mkdir $FOLDER
+
+# Desktop
+
+echo "curl --cookie \"PHPSESSID=$3\" -o ${FOLDER}${NAME}.htm $URL"
+curl --cookie "PHPSESSID=$3" -o ${FOLDER}${NAME}.htm $URL
 
 echo "critical --base . ${FOLDER}${NAME}.htm > ${FOLDER}${NAME}.css"
 critical --base . ${FOLDER}${NAME}.htm > ${FOLDER}${NAME}.css
 
-#echo "curl -X POST -s --data-urlencode 'input@${FOLDER}${NAME}.css' https://cssminifier.com/raw > ${FOLDER}${NAME}.min.css"
-#curl -X POST -s --data-urlencode "input@${FOLDER}${NAME}.css" https://cssminifier.com/raw > ${FOLDER}${NAME}.min.css
+echo "curl -F \"files0=@${FOLDER}${NAME}.css\" http://srv.cnvyr.io/v1?min=css -o ${FOLDER}${NAME}.min.css"
 curl -F "files0=@${FOLDER}${NAME}.css" http://srv.cnvyr.io/v1?min=css -o ${FOLDER}${NAME}.min.css
 
 # Mobile
@@ -19,8 +22,7 @@ curl -F "files0=@${FOLDER}${NAME}.css" http://srv.cnvyr.io/v1?min=css -o ${FOLDE
 echo "critical  -w375 -h667 --base . ${FOLDER}${NAME}.htm > ${FOLDER}${NAME}.mobile.css"
 critical  -w375 -h667 --base . ${FOLDER}${NAME}.htm > ${FOLDER}${NAME}.mobile.css
 
-#echo "curl -X POST -s --data-urlencode 'input@${FOLDER}${NAME}.mobile.css' https://cssminifier.com/raw > ${FOLDER}${NAME}.mobile.min.css"
-#curl -X POST -s --data-urlencode "input@${FOLDER}${NAME}.mobile.css" https://cssminifier.com/raw > ${FOLDER}${NAME}.mobile.min.css
+echo "curl -F \"files0=@${FOLDER}${NAME}.mobile.css\" http://srv.cnvyr.io/v1?min=css -o ${FOLDER}${NAME}.mobile.min.css"
 curl -F "files0=@${FOLDER}${NAME}.mobile.css" http://srv.cnvyr.io/v1?min=css -o ${FOLDER}${NAME}.mobile.min.css
 
 echo "Clean up"
